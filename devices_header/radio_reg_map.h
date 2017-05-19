@@ -8,7 +8,7 @@
 #ifndef SRC_RADIO_REG_MAP_H_
 #define SRC_RADIO_REG_MAP_H_
 
-#define 	WNR							1<<8
+#define 	WNR							1<<7
 /*
  * read mode addresses
  */
@@ -20,12 +20,12 @@
 #define 	PA_CONFIG_R					0x09
 #define 	PA_RAMP_R					0x0A
 #define 	LNA_R						0x0C
-#define 	FIOF_ADR_PTR_R				0x0D
-#define 	FIOF_TX_BASE_ADR_R			0x0E
-#define 	FIOF_RX_BASE_ADR_R			0x0F
-#define 	FIOF_RX_CUR_ADR_R			0x10
-#define 	IRG_FLAG_MSK_R				0x11
-#define 	IRG_FLAGS_R					0x12
+#define 	FIFO_ADR_PTR_R				0x0D
+#define 	FIFO_TX_BASE_ADR_R			0x0E
+#define 	FIFO_RX_BASE_ADR_R			0x0F
+#define 	FIFO_RX_CUR_ADR_R			0x10
+#define 	IRQ_FLAG_MSK_R				0x11
+#define 	IRQ_FLAGS_R					0x12
 #define 	RX_N_BYTES_R				0x13
 #define 	MODEM_STATUS_R				0x18
 #define 	PKT_SNR_VAL_R				0x19
@@ -42,6 +42,7 @@
 #define 	FREQ_ERR_LSB_R				0x2A
 #define 	INVERT_IQ_R					0x33
 #define 	SYNCH_WORD_R				0x39
+#define		DIO_MAPPING_1_R				0x40
 
 #define 	VERSION						0x42		//device version should be 0x22...
 
@@ -56,12 +57,12 @@
 #define 	PA_CONFIG_W					(PA_CONFIG_R | WNR)
 #define 	PA_RAMP_W					(PA_RAMP_R | WNR)		//0x8A
 #define 	LNA_W						(LNA_R | WNR)
-#define 	FIOF_ADR_PTR_W				(FIOF_ADR_PTR_R | WNR)
-#define 	FIOF_TX_BASE_ADR_W			(FIOF_TX_BASE_ADR_R | WNR)
-#define 	FIOF_RX_BASE_ADR_W			(FIOF_RX_BASE_ADR_R | WNR)
-#define 	FIOF_RX_CUR_ADR_W			(FIOF_RX_CUR_ADR_R | WNR)
-#define 	IRG_FLAG_MSK_W				(IRG_FLAG_MSK_R | WNR)
-#define 	IRG_FLAGS_W					(IRG_FLAGS_R | WNR)
+#define 	FIFO_ADR_PTR_W				(FIFO_ADR_PTR_R | WNR)
+#define 	FIFO_TX_BASE_ADR_W			(FIFO_TX_BASE_ADR_R | WNR)
+#define 	FIFO_RX_BASE_ADR_W			(FIFO_RX_BASE_ADR_R | WNR)
+#define 	FIFO_RX_CUR_ADR_W			(FIFO_RX_CUR_ADR_R | WNR)
+#define 	IRQ_FLAG_MSK_W				(IRQ_FLAG_MSK_R | WNR)
+#define 	IRQ_FLAGS_W					(IRQ_FLAGS_R | WNR)
 #define 	RX_N_BYTES_W				(RX_N_BYTES_R | WNR)
 #define 	MODEM_STATUS_W				(MODEM_STATUS_R | WNR)
 #define 	PKT_SNR_VAL_W				(PKT_SNR_VAL_R | WNR)
@@ -78,5 +79,7 @@
 #define 	FREQ_ERR_LSB_W				(FREQ_ERR_LSB_R | WNR)
 #define 	INVERT_IQ_W					(INVERT_IQ_R | WNR)
 #define 	SYNCH_WORD_W				(SYNCH_WORD_R | WNR)			//0xB9
+#define		DIO_MAPPING_1_W				(DIO_MAPPING_1_R | WNR)
+
 
 #endif /* SRC_RADIO_REG_MAP_H_ */

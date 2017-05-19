@@ -83,6 +83,7 @@
 #define 	CS_RADIO_PORT		gpioPortD
 #define 	PWR_EN_PORT			gpioPortA
 #define		GPS_SIG_PORT		gpioPortD
-
+#define 	RADIO_IO_0345_PORT	gpioPortC
+#define 	RADIO_IO_12_PORT	gpioPortE
 
 #endif /* SRC_PINMAP_H_ */
