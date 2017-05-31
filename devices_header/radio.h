@@ -366,7 +366,7 @@
  * private functions
  */
 void 			write_fifo(unsigned char *data, uint8_t size);
-unsigned char*	read_fifo(uint8_t size);
+void 			read_fifo(uint8_t size,unsigned char *data);
 void 			write_reg(uint8_t addr, uint8_t cmd);
 uint8_t 		read_reg(uint8_t addr);
 uint8_t 		get_package(unsigned char *RFM_Rx_Package);
@@ -378,6 +378,6 @@ void 			RFM_on(void);
 void 			RFM_off(void);
 void 			RFM_Send_Package(unsigned char  *RFM_Tx_Package,
 				uint8_t Package_Length);
-unsigned char* 	RFM_Receive_Package(void);
+uint8_t 		RFM_Receive(unsigned char  *RFM_Rx_Package);
 
 #endif /* SRC_RADIO_H_ */

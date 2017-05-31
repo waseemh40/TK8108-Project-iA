@@ -35,26 +35,25 @@ const 			unsigned char  		rs232_tx_buf[64];
 	 for (loop_var = 0;loop_var < size; loop_var++)
 	  {
 		write_reg(REG_LR_FIFO,data[loop_var]);
-	   sprintf((char *)rs232_tx_buf,"\t Write Fifo => Loop=%d char=%c Addr=%2x\n",loop_var,data[loop_var],read_reg(REG_LR_FIFOADDRPTR));
-	   rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
 	 }
 	 return;
  }
- unsigned char* read_fifo(uint8_t size){
-	 int 		loop_var=0;
-	 static 	 unsigned char	data[128];
-	 spi_cs_clear(radio);
-	 spi_write_byte((uint8_t)(REG_LR_FIFOADDRPTR | WNR));
-	 spi_write_byte((uint8_t)RX_BASE_ADDRESS);
-	 delay_ms(1);
-	 for(loop_var=0;loop_var<size;loop_var++){
-		 spi_write_byte((uint8_t)REG_LR_FIFO);
-		 data[loop_var]=(unsigned char)spi_read_byte();
-		 //delay_ms(0);
-	 }
-	 spi_cs_set(radio);
-	 return data;
- }
+ void read_fifo(uint8_t size, unsigned char *data){
+ 	uint8_t 			loop_var=0;
+ 	uint8_t				RFM_Package_Location=0;
+
+	 //Get start location of Rx package.
+ 	 RFM_Package_Location = read_reg(REG_LR_FIFORXCURRENTADDR);
+
+ 	 //Set SPI pointer to recieved package location
+ 	 write_reg(REG_LR_FIFOADDRPTR, RFM_Package_Location);
+
+ 	 	 //Read FIFO and write into the buffer
+ 	 for(loop_var=0;loop_var<size;loop_var++){
+ 		 data[loop_var]=(unsigned char)read_reg(REG_LR_FIFO);
+ 	 }
+ 	 return;
+  }
  void write_reg(uint8_t addr,uint8_t cmd){
 	 spi_cs_clear(radio);
 	 spi_write_byte((uint8_t)(addr | WNR));
@@ -76,15 +75,9 @@ const 			unsigned char  		rs232_tx_buf[64];
  uint8_t get_package(unsigned char *RFM_Rx_Package)
  {
    unsigned char RFM_Package_Length        = 0x0000;
-   unsigned char RFM_Package_Location      = 0x0000;
 
-   //RFM_Package_Location = RFM_Read(REG_LR_FIFORXCURRENTADDR); /*Read start position of received package*/
    RFM_Package_Length   = read_reg(REG_LR_RXNBBYTES); /*Read length of received package*/
-
-   write_reg(REG_LR_FIFOADDRPTR,RFM_Package_Location); /*Set SPI pointer to start of package*/
-   sprintf((char *)rs232_tx_buf,"\tAddr=%2x\tLength=%2x\n",RFM_Package_Location,RFM_Package_Length);
-   rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
-   RFM_Rx_Package=read_fifo(RFM_Package_Length);
+   read_fifo(RFM_Package_Length,RFM_Rx_Package);
    return RFM_Package_Length;
  }
 /*
@@ -147,103 +140,98 @@ uint8_t RFM_Init(void)
 	//change_mode(radio_mode);
 	return read_reg(REG_LR_OPMODE);
 }
- void RFM_Send_Package(unsigned char  *RFM_Tx_Package, uint8_t Package_Length)
- {
-   //Set RFM in Standby mode wait on mode ready
-   write_reg(REG_LR_OPMODE,STDBY_MODE);
+void RFM_Send_Package(uint8_t *RFM_Tx_Package, uint8_t Package_Length)
+{
+	   //Set RFM in Standby mode wait on mode ready
+	   write_reg(REG_LR_OPMODE,STDBY_MODE);
 
-   //Switch DIO0 to TxDone
-   write_reg(REG_LR_DIOMAPPING1,DIO_TX_MAPPING);
+	   //Switch DIO0 to TxDone
+	   write_reg(REG_LR_DIOMAPPING1,DIO_TX_MAPPING);
 
-   //write to FIFO
-   write_fifo(RFM_Tx_Package,Package_Length);
+	   //write to FIFO
+	   write_fifo(RFM_Tx_Package,Package_Length);
 
-   //Switch RFM to Tx
-   write_reg(REG_LR_OPMODE,TX_MODE);
+	   //Switch RFM to Tx
+	   write_reg(REG_LR_OPMODE,TX_MODE);
 
-   //Wait for TxDone
-   while(!GPIO_PinInGet(RADIO_IO_0345_PORT,RADIO_IO_0))
-   {
-		sprintf((char *)rs232_tx_buf,"\tTX WAITING on INT C1=%2x\tC2=%2x\tC3=%2x\n",read_reg(REG_LR_MODEMCONFIG1),read_reg(REG_LR_MODEMCONFIG2),read_reg(REG_LR_MODEMCONFIG3));
+	   //Wait for TxDone
+	   while(!GPIO_PinInGet(RADIO_IO_0345_PORT,RADIO_IO_0))
+	   {
+			delay_ms(7);
+	   }
+
+	   //Clear interrupt register
+	   write_reg(REG_LR_IRQFLAGS,0x01);
+
+	   //Switch RFM to sleep mode
+	   write_reg(REG_LR_OPMODE,SLEEP_MODE);
+
+	   return;
+}
+uint8_t RFM_Receive(unsigned char  *msg)
+{
+
+  uint8_t 		RFM_Interrupt=0;
+  uint8_t 		msg_length=0;
+
+  //Set RFM in Standby mode wait on mode ready
+  write_reg(REG_LR_OPMODE,STDBY_MODE);
+
+  //Switch DIO0 to TxDone
+  write_reg(REG_LR_DIOMAPPING1,DIO_RX_MAPPING);
+
+  //Invert IQ
+  //write_reg(REG_LR_INVERTIQ,0x67);
+  //write_reg(REG_LR_INVERTIQ2,0x19);
+  //write_reg(REG_LR_TEST36,0x02);
+  //write_reg(REG_LR_TEST3A,0x64);
+
+  //Switch RFM to Single reception
+  write_reg(REG_LR_OPMODE,RX_MODE);
+
+  //Wait until RxDone or Timeout
+
+  while((GPIO_PinInGet(RADIO_IO_0345_PORT,RADIO_IO_0) == 0) && (GPIO_PinInGet(RADIO_IO_12_PORT,RADIO_IO_1) == 0))
+  {
+	   delay_ms(7);
+  }
+
+  //Get interrupt register
+  RFM_Interrupt = read_reg(REG_LR_IRQFLAGS);
+
+  //Check for Timeout
+  if(GPIO_PinInGet(RADIO_IO_12_PORT,RADIO_IO_1) == 1)
+  {
+		sprintf((char *)rs232_tx_buf,"\tRX TIMEOUT INT\n");
 		rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
 		delay_ms(7);
-   }
-	sprintf((char *)rs232_tx_buf,"\tTX DONE\n");
-	rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
-
- }
- uint8_t* RFM_Receive_Package(void)
-  {
-
-    unsigned char RFM_Interrupt;
-    unsigned char	msg[20];
-
-    //Set RFM in Standby mode wait on mode ready
-    RFM_Write(REG_LR_OPMODE,STDBY_MODE);
-
-    //Switch DIO0 to TxDone
-    RFM_Write(REG_LR_DIOMAPPING1,DIO_RX_MAPPING);
-
-    //Switch RFM to Single reception
-    RFM_Write(REG_LR_OPMODE,RX_MODE);
-
-    //Wait until RxDone or Timeout
-    //Wait until timeout or RxDone interrupt
-    while((GPIO_PinInGet(RADIO_IO_0345_PORT,RADIO_IO_0) == 0) && (GPIO_PinInGet(RADIO_IO_12_PORT,RADIO_IO_1) == 0))
-    {
- 		sprintf((char *)rs232_tx_buf,"\tRX WAITING on INT \tIRQ=%2x \tMode=%2x \tRSSI=%3d\tC1=%2x\tC2=%2x\tC3=%2x\n",RFM_Read(REG_LR_IRQFLAGS),RFM_Read(REG_LR_MODEMSTAT),RFM_Read(REG_LR_RSSIVALUE),RFM_Read(REG_LR_MODEMCONFIG1),RFM_Read(REG_LR_MODEMCONFIG2),RFM_Read(REG_LR_MODEMCONFIG3));
- 		rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
- 		if(RFM_Read(REG_LR_IRQFLAGS)==0x50){
- 			sprintf((char *)rs232_tx_buf,"\tValid Packet Rxvd\n");
- 			rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
- 			break;}
- 		delay_ms(10);
-    }
- 	sprintf((char *)rs232_tx_buf,"\tRX INT Done\n");
- 	rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
-    //Get interrupt register
-    RFM_Interrupt = RFM_Read(REG_LR_IRQFLAGS);
-
-    //Check for Timeout
-    if(GPIO_PinInGet(RADIO_IO_12_PORT,RADIO_IO_1) == 1)
-    {
- 		sprintf((char *)rs232_tx_buf,"\tRX TIMEOUT INT\n");
- 		rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
- 		delay_ms(7);
-    }
-
-    //Check for RxDone
-    if(GPIO_PinInGet(RADIO_IO_0345_PORT,RADIO_IO_0) == 1)
-    {
-      //Check CRC
-      if((RFM_Interrupt & 0x20) != 0x20)
-      {
-  		sprintf((char *)rs232_tx_buf,"\tRX OK INT Flags=%2x\n",RFM_Interrupt);
-  		rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
-  		delay_ms(7);
-  		RFM_Interrupt=get_package(msg);
- 		sprintf((char *)rs232_tx_buf,"\tMSG=%d %d %d\n",msg[2], msg[3], msg[4]);
-  		rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
- 		sprintf((char *)rs232_tx_buf,"\tMSG=%s\n",msg);
-  		rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
-
-      }
-      else
-      {
-  		sprintf((char *)rs232_tx_buf,"\tRX OK WRONG CRC\n");
-  		rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
-  		delay_ms(7);
-      }
-    }
-
-    //Clear interrupt register
-    RFM_Write(REG_LR_IRQFLAGS,0xE0);
-
-    //Switch rfm to standby
-    RFM_Write(REG_LR_OPMODE,SLEEP_MODE);
-
-    return msg;
   }
+
+  //Check for RxDone
+  if(GPIO_PinInGet(RADIO_IO_0345_PORT,RADIO_IO_0) == 1)
+  {
+    //Check CRC
+    if((RFM_Interrupt & 0x20) != 0x20)
+    {
+		write_reg(REG_LR_IRQFLAGS,RFM_Interrupt);
+		msg_length=get_package(msg);
+    }
+    else
+    {
+		sprintf((char *)rs232_tx_buf,"\tCRC Error\n");
+		rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
+		delay_ms(7);
+    }
+  }
+
+  //Clear interrupt register
+  write_reg(REG_LR_IRQFLAGS,0xE0);
+
+  //Switch RFM to sleep mode
+  write_reg(REG_LR_OPMODE,SLEEP_MODE);
+
+  return msg_length;
+}
 
 void RFM_on(void){
 	GPIO_PinOutSet(PWR_EN_PORT,RADIO_PWR_EN);
