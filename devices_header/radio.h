@@ -348,7 +348,7 @@
 		//RF end settings
 #define	INVERT_IQ				0x67
 		//Public/private WAN
-#define	SYNCH_WORD				0x34
+#define	SYNCH_WORD				0x12
 		//DIO Mapping
 #define	DIO_RX_MAPPING			0x00
 #define	DIO_TX_MAPPING			0x40
@@ -358,12 +358,6 @@
 #define TX_BASE_ADDRESS			0x80
 #define RX_BASE_ADDRESS			0x00
 
-typedef enum{
-	radio_sleep_mode=0,
-	radio_tx_mode,
-	radio_rx_mode,
-	radio_standby_mode,
-}radio_mode_t;
 /*
  * public variables
  */
@@ -371,17 +365,19 @@ typedef enum{
 /*
  * private functions
  */
-void 			write_fifo(uint8_t *data, uint8_t size);
-uint8_t* 		read_fifo(uint8_t size);
-void 			write_cmd(uint8_t addr, uint8_t cmd);
-uint8_t 		read_cmd(uint8_t addr);
-void 			change_mode(radio_mode_t radio_mode);
+void 			write_fifo(unsigned char *data, uint8_t size);
+unsigned char*	read_fifo(uint8_t size);
+void 			write_reg(uint8_t addr, uint8_t cmd);
+uint8_t 		read_reg(uint8_t addr);
+uint8_t 		get_package(unsigned char *RFM_Rx_Package);
 /*
  * public functions
  */
-uint8_t			radio_init(radio_mode_t radio_mode);
-void 			radio_on(void);
-void 			radio_off(void);
-void 			radio_transmit_string(uint8_t *tx_buf, uint8_t size);
+uint8_t			RFM_Init(void);
+void 			RFM_on(void);
+void 			RFM_off(void);
+void 			RFM_Send_Package(unsigned char  *RFM_Tx_Package,
+				uint8_t Package_Length);
+unsigned char* 	RFM_Receive_Package(void);
 
 #endif /* SRC_RADIO_H_ */
