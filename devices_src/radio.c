@@ -95,13 +95,12 @@ uint8_t RFM_Init(void)
 	write_reg(REG_LR_OPMODE,SLEEP_MODE);
 
 	//Set carrier frequency
-	// 868.100 MHz / 61.035 Hz = 14222987 = 0xD9068B
-	write_reg(REG_LR_FRFMSB,0xD9);
-	write_reg(REG_LR_FRFMID,0x06);
-	write_reg(REG_LR_FRFLSB,0x8B);
+	write_reg(REG_LR_FRFMSB,FC_MSB);
+	write_reg(REG_LR_FRFMID,FC_MID);
+	write_reg(REG_LR_FRFLSB,FC_LSB);
 
-	//PA pin (maximal power)
-	write_reg(REG_LR_PACONFIG,0xFF);
+	//PA pin power
+	write_reg(REG_LR_PACONFIG,PA_7dBm);
 
 	//BW = 125 kHz, Coding rate 4/5, Explicit header mode
 	write_reg(REG_LR_MODEMCONFIG1,COFNFIG_SETTINGS_1);
