@@ -102,6 +102,9 @@ uint8_t RFM_Init(void)
 	//PA pin power
 	write_reg(REG_LR_PACONFIG,PA_7dBm);
 
+	//LNA gain
+	write_reg(REG_LR_LNA, LNA_GAIN_DEFAULT);
+
 	//BW = 125 kHz, Coding rate 4/5, Explicit header mode
 	write_reg(REG_LR_MODEMCONFIG1,COFNFIG_SETTINGS_1);
 
@@ -156,8 +159,9 @@ void RFM_Send_Package(uint8_t *RFM_Tx_Package, uint8_t Package_Length)
 	   //Wait for TxDone
 	   while(!GPIO_PinInGet(RADIO_IO_0345_PORT,RADIO_IO_0))
 	   {
-			delay_ms(7);
+			delay_ms(4);
 	   }
+	   //delay_ms(7);
 
 	   //Clear interrupt register
 	   write_reg(REG_LR_IRQFLAGS,0x01);

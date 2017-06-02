@@ -71,6 +71,42 @@ bool tbr_cmd_update_rgb_led(tbr_cmd_t tbr_cmd, time_t timestamp){
 	rgb_shutdown();
 	return ret_flag;
 }
+void shift_buffer(unsigned char *buffer, uint8_t buffer_size, uint8_t shift_amount){
+	int 			inner_loop_var=0;
+	int 			outer_loop_var=0;
+
+	for(outer_loop_var=0;outer_loop_var<shift_amount;outer_loop_var++){
+		for (inner_loop_var = buffer_size; inner_loop_var > 0; inner_loop_var--){
+			buffer[inner_loop_var]=buffer[inner_loop_var-1];
+		}
+	}
+	return;
+}
+uint8_t	pack_radio_message(unsigned char *tbr_sn, uint8_t msg_type, uint8_t message_count, unsigned char *tx_buf){
+	uint8_t			length=0;
+	int 			inner_loop_var=0;
+	length=strlen((char*)tx_buf);
+		//shift buffer to add space in the beginning
+	shift_buffer(tx_buf,240,4);
+		//add SN and message type
+	for (inner_loop_var = 0; inner_loop_var < 4; inner_loop_var++){
+		tx_buf[inner_loop_var]=tbr_sn[inner_loop_var];
+	}
+	//strncat((char *)tx_buf, (char *) tbr_sn,6);
+	//tx_buf[5]=(char)message_count;
+	return (7+length);
+}
+void send_data_on_radio(unsigned char *tx_buf,uint8_t message_count){
+	unsigned char	tbr_sn[7]="@01:";
+	uint8_t			msg_type=0;
+	uint8_t			msg_length_in_bytes=0;
+
+	RFM_Init();
+	msg_length_in_bytes=pack_radio_message(tbr_sn,msg_type,message_count,tx_buf);
+	RFM_Send_Package(tx_buf,msg_length_in_bytes);
+	RFM_off();
+	return;
+}
 		/*
 		 * public functions
 		 */
@@ -155,17 +191,12 @@ void app_manager_tbr_synch_msg(uint8_t  time_manager_cmd, nav_data_t nav_data){
 	int				tbr_msg_length=0;
 	char			tbr_msg_buf[ARRAY_MESSAGE_SIZE];
 	////////////////Radio thing insh-A-ALLAH///////////////
-	unsigned char	radio_buf[13]="insh A ALLAH";
+	unsigned char	radio_buf[LORA_TX_BUFFER_SIZE]="insh A ALLAH";
 	///////////////////////////////////////////////////////
 	if(time_manager_cmd==0){
 		temp_flag=tbr_cmd_update_rgb_led(cmd_basic_sync,(time_t)nav_data.gps_timestamp);
 		sprintf((char *)rs232_tx_buf,"Basic Sync MSG:Flag=%d\t\n",temp_flag);
 		rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
-		//////////////////////////////////////////////////////////////////
-		RFM_Init();
-		RFM_Send_Package(radio_buf,13);
-		RFM_off();
-		/////////////////////////////////////////////////////////////////
 	  }
 	  else if (time_manager_cmd==1 && nav_data.valid==1 ){
 		  temp_flag=tbr_cmd_update_rgb_led(cmd_advance_sync,(time_t)nav_data.gps_timestamp);
@@ -176,13 +207,14 @@ void app_manager_tbr_synch_msg(uint8_t  time_manager_cmd, nav_data_t nav_data){
 			temp_flag=file_sys_setup(nav_data.year,nav_data.month,nav_data.day,tbr_msg_buf);
 			sprintf((char *)rs232_tx_buf,"\t\tFile Write Flag=%1d Length=%3d\t\n",temp_flag,tbr_msg_length);
 			rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
+			send_data_on_radio(tbr_msg_buf,tbr_msg_count);
 		  }
 		  last_nav_data=nav_data;
 	  }
 	  else if (time_manager_cmd==1 && nav_data.valid==0){
 		  sprintf((char *)rs232_tx_buf,"\tInvalid TimeStamp: Using Last TimeStamp\n");
 		  rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
-		  temp_flag=tbr_cmd_update_rgb_led(cmd_advance_sync,(time_t)last_nav_data.gps_timestamp);
+		  temp_flag=tbr_cmd_update_rgb_led(cmd_advance_sync,(time_t)(last_nav_data.gps_timestamp+60));	//add exactly 60 seconds to last TimeStamp
 		  sprintf((char *)rs232_tx_buf,"\tAdvance Synch MSG:Flag=%d",temp_flag);
 		  rs232_transmit_string(rs232_tx_buf,strlen((const char *)rs232_tx_buf));
 		  tbr_msg_count=tbr_recv_msg((char *)tbr_msg_buf,&tbr_msg_length);

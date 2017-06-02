@@ -58,6 +58,15 @@
 #define TX_BASE_ADDRESS			0x80
 #define RX_BASE_ADDRESS			0x00
 
+	/*
+	 * TX buffer size and format:
+	 * TBR serial No.=6 bytes (also ID of controller)
+	 * Pay-load Length=1 byte
+	 * 0 bytes <= Pay-load <= 4*50 bytes
+	 * Bytes Left => future extension or GPS data...
+	 */
+#define LORA_TX_BUFFER_SIZE		240
+
 /*
  * public variables
  */
