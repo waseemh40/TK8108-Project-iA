@@ -14,9 +14,23 @@
  * public variables
  */
 const 			unsigned char  		rs232_tx_buf[64];
+// LoRaWAN Application identifier (AppEUI)
+static const uint8_t APPEUI[8]  = { 0x8a,	0x92,	0x37,	0xb7,	0x9b,	0xc6,	0x62,	0xe9};
+
+// LoRaWAN DevEUI, unique device ID (LSBF)
+// Not used in this example
+static const uint8_t DEVEUI[8]  = { 0x8a,	0x92,	0x37,	0xb7,	0x9b,	0xc6,	0x62,	0xe9};
+
+// LoRaWAN NwkSKey, network session key
+// Use this key for The Things Network
+static const uint8_t DEVKEY[16] = {0xa8,	0x4c,	0xde,	0xbb,	0xbb,	0xfb,	0x25,	0xe6,	0x3f,	0x8b,	0xa1,	0xcd,	0x8c,	0xbd,	0x65,	0xdb};
 
 /*
  * private functions
+ */
+void join_request(void){}
+/*
+ *
  */
  void write_fifo(unsigned char *data, uint8_t size){
 	 int 		loop_var=0;
@@ -142,7 +156,7 @@ uint8_t RFM_Init(void)
 	//change_mode(radio_mode);
 	return read_reg(REG_LR_OPMODE);
 }
-void RFM_Send_Package(uint8_t *RFM_Tx_Package, uint8_t Package_Length)
+void RFM_Send_Package(unsigned char *RFM_Tx_Package, uint8_t Package_Length)
 {
 	   //Set RFM in Standby mode wait on mode ready
 	   write_reg(REG_LR_OPMODE,STDBY_MODE);

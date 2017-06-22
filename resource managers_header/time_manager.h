@@ -14,8 +14,8 @@
 
 #define 	TIME_MANAGER_ISR			GPIO_EVEN_IRQHandler
 #define 	TIME_MANAGER_IRQn			GPIO_EVEN_IRQn
-#define		BASIC_SYNCH_SECONDS			10
-#define		ADVANCE_SYNCH_SECONDS		60
+#define		BASIC_SYNCH_SECONDS			3
+#define		ADVANCE_SYNCH_SECONDS		9
 
 typedef enum{
 	basic_sync=0,
